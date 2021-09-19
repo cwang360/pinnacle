@@ -19,6 +19,8 @@ final int WINDOW_SIZE = 20;
 final int ACCEL_CUTOFF = 10;
 
 ArrayList<Animation> animations = new ArrayList<Animation>();
+HashMap<Character, KeyStat> keyStats = new HashMap<Character, KeyStat>();
+int waitTime;
 
 // array holding queue for each finger's sliding window position data points.
 ArrayList<Queue<PVector>> posFrames;
@@ -39,6 +41,8 @@ void setup() {
   leap = new LeapMotion(this);
   waitForHands();
   setUpFingerTrackingData();
+    waitTime = millis();
+
 }
 
 //simple type the letter test
@@ -56,7 +60,7 @@ void draw() {
   Double maxAccel = Collections.max(accel);
   //int maxFinger = accel.indexOf(maxAccel);
 
-  println(maxAccel);
+  //println(maxAccel);
   if (maxAccel > ACCEL_CUTOFF) {
     //if (!prevTyped) {
       if (accel.indexOf(maxAccel) == maxFingers.peek()) {
@@ -78,6 +82,7 @@ void draw() {
 
 
   markMaxAccelFinger();
+  displayStats();
 }
 
 String pickWord() {
@@ -188,6 +193,14 @@ void setUpFingerMapping() {
 boolean processInput(int input) {
   char curr = currentWord.charAt(currentIndex);
   if (fingerMapping.get(curr) == input) {
+    if(keyStats.containsKey(curr)){
+      keyStats.get(curr).update(millis()-waitTime);
+    } else{
+      keyStats.put(curr, new KeyStat(curr, millis()-waitTime));
+    }
+        println(millis() + " " + waitTime);
+
+    waitTime = millis();
     currentIndex++;
     if (currentIndex == currentWord.length()) {
       numCompleted++;
@@ -256,7 +269,7 @@ void waitForHands() {
     print(".");
     delay(1000);
   }
-  println();
+  //println();
 }
 
 void calculateCurrAccel() {
@@ -330,4 +343,16 @@ void markMaxAccelFinger() {
     }
   }
 
+}
+
+void displayStats(){
+  fill(0);
+  ArrayList<KeyStat> sortedStats = new ArrayList<KeyStat>(keyStats.values());
+  Collections.sort(sortedStats);
+  text("5 Slowest Keys: ", 600, 70);
+  text("(Avg. time) ",600, 100);
+  for(int i =0; i < 5 && i < sortedStats.size(); i++){
+    text(sortedStats.get(i).toString()+" s", 600, 130+i*30);
+  }
+  text(String.format("%.2f s", ((double)(millis()-waitTime))/1000),600, 600);
 }
