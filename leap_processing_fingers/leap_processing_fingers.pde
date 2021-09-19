@@ -17,7 +17,7 @@ ArrayList<Queue<PVector>> velFrames;
 // array for each finger's change in velocity
 ArrayList<Double> accel;
 
-Queue<Integer> maxFingers = new LinkedList<Integer>(Arrays.asList(0,0,0));
+Queue<Integer> maxFingers = new LinkedList<Integer>(Arrays.asList(0, 0, 0));
 int maxFinger = 0;
 
 
@@ -26,6 +26,37 @@ void setup() {
   background(255);
 
   leap = new LeapMotion(this);
+
+  waitForHands();
+
+  setUpFingerTrackingData();
+}
+
+
+void draw() {
+  background(255);
+  fill(0);
+
+  calculateCurrAccel();
+
+  Double maxAccel = Collections.max(accel);
+  //int maxFinger = accel.indexOf(maxAccel);
+
+  if (maxAccel > ACCEL_CUTOFF) {
+    if (accel.indexOf(maxAccel) == maxFingers.peek()) {
+      maxFinger = maxFingers.remove();
+    } else {
+      maxFingers.remove();
+    }
+    maxFingers.add(accel.indexOf(maxAccel));
+
+    println(maxFinger);
+  }
+
+  markMaxAccelFinger();
+}
+
+void setUpFingerTrackingData() {
   accel = new ArrayList<Double>();
   for (int i = 0; i < 10; i++) {
     accel.add(new Double(0));
@@ -33,14 +64,6 @@ void setup() {
 
   posFrames = new ArrayList<Queue<PVector>>(10);
   velFrames = new ArrayList<Queue<PVector>>(10);
-
-  print("Waiting for hands");
-  while (!leap.hasHands() || leap.getHands().size() < 2) {
-    print(".");
-    delay(1000);
-  }
-  println();
-
   for (int i = 0; i < 10; i++) {
     posFrames.add(i, new LinkedList<PVector>());
     velFrames.add(i, new LinkedList<PVector>());
@@ -81,22 +104,23 @@ void setup() {
     }
     delay(10);
   }
-  println(velFrames);
-  println(posFrames);
 }
 
+void waitForHands() {
 
-void draw() {
-  background(255);
-  fill(0);
-  //int fps = leap.getFrameRate();
+  print("Waiting for hands");
+  while (!leap.hasHands() || leap.getHands().size() < 2) {
+    print(".");
+    delay(1000);
+  }
+  println();
+}
 
+void calculateCurrAccel() {
   for (Hand hand : leap.getHands()) {
 
     if (hand.isLeft()) {
-      for (Finger finger : hand.getFingers()) {
-        finger.drawJoints(8);
-        finger.drawBones();
+      for (Finger finger : hand.getFingers()) {     
         PVector currPos = finger.getStabilizedPosition();
         PVector currVel = PVector.sub(currPos, posFrames.get(finger.getType()).remove());
         accel.set(finger.getType(), new Double(
@@ -107,8 +131,6 @@ void draw() {
       }
     } else if (hand.isRight()) {
       for (Finger finger : hand.getFingers()) {
-        finger.drawJoints(8);
-        finger.drawBones();
         PVector currPos = finger.getStabilizedPosition();
         PVector currVel = PVector.sub(currPos, posFrames.get(finger.getType()+5).remove());
         accel.set(finger.getType()+5, new Double(
@@ -119,52 +141,40 @@ void draw() {
       }
     }
   }
+}
 
-  Double maxAccel = Collections.max(accel);
-  //int maxFinger = accel.indexOf(maxAccel);
-  
-  if (maxAccel > ACCEL_CUTOFF) {
-
-    if(accel.indexOf(maxAccel) == maxFingers.peek()){
-      maxFinger = maxFingers.remove();
-    } else {
-      maxFingers.remove();
-    }
-    maxFingers.add(accel.indexOf(maxAccel));
-  
-    println(maxFinger);
-  }
-
+void markMaxAccelFinger() {
   for (Hand hand : leap.getHands ()) {
 
     boolean handIsLeft = hand.isLeft();
     boolean handIsRight = hand.isRight();
 
     for (Finger finger : hand.getFingers()) {
+      finger.drawJoints(10);
+      finger.drawBones();
       int     fingerType = finger.getType();
       PVector fingerStabilized = finger.getStabilizedPosition();
 
 
-        if ((maxFinger < 5 && handIsLeft && fingerType == maxFinger) || (maxFinger >= 5 && handIsRight && fingerType == maxFinger-5)) {
-          fill(66, 135, 245);
-          ellipse(fingerStabilized.x, fingerStabilized.y, 15, 15);
-          switch(maxFinger%5) {
-          case 0: 
-            text("Thumb", fingerStabilized.x, fingerStabilized.y-30);  
-            break;
-          case 1: 
-            text("Index", fingerStabilized.x, fingerStabilized.y-30);
-            break;
-          case 2:
-            text("Middle", fingerStabilized.x, fingerStabilized.y-30);
-            break;
-          case 3:
-            text("Ring", fingerStabilized.x, fingerStabilized.y-30);  
-            break;
-          case 4:
-            text("Pinky", fingerStabilized.x, fingerStabilized.y-30);
-          }
-        
+      if ((maxFinger < 5 && handIsLeft && fingerType == maxFinger) || (maxFinger >= 5 && handIsRight && fingerType == maxFinger-5)) {
+        fill(66, 135, 245);
+        ellipse(fingerStabilized.x, fingerStabilized.y, 15, 15);
+        switch(maxFinger%5) {
+        case 0: 
+          text("Thumb", fingerStabilized.x, fingerStabilized.y-30);  
+          break;
+        case 1: 
+          text("Index", fingerStabilized.x, fingerStabilized.y-30);
+          break;
+        case 2:
+          text("Middle", fingerStabilized.x, fingerStabilized.y-30);
+          break;
+        case 3:
+          text("Ring", fingerStabilized.x, fingerStabilized.y-30);  
+          break;
+        case 4:
+          text("Pinky", fingerStabilized.x, fingerStabilized.y-30);
+        }
       }
     }
   }
