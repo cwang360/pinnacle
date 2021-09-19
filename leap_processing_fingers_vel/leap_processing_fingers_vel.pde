@@ -83,18 +83,14 @@ void draw() {
 
     boolean handIsLeft         = hand.isLeft();
     boolean handIsRight        = hand.isRight();
-    // --------------------------------------------------
-    // Drawing
+  
     hand.draw();
 
 
     for (Finger finger : hand.getFingers()) {
       int     fingerType         = finger.getType();
       PVector fingerPosition   = finger.getPosition();
-      PVector fingerStabilized = finger.getStabilizedPosition();
-      PVector fingerVelocity   = finger.getVelocity();
-      PVector fingerDirection  = finger.getDirection();
-      float   fingerTime       = finger.getTimeVisible();
+
       
       if (maxDeltaPos > 20) {
             if((maxFinger < 5 && handIsLeft && fingerType == maxFinger) || (maxFinger >= 5 && handIsRight && fingerType == maxFinger-5)) {

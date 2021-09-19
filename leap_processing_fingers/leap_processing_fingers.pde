@@ -2,11 +2,12 @@ import de.voidplus.leapmotion.*;
 import java.util.Queue;
 import java.util.LinkedList;
 import java.util.Collections;
+import java.util.Arrays;
 
 LeapMotion leap;
 
 final int WINDOW_SIZE = 20;
-final int ACCEL_CUTOFF = 20;
+final int ACCEL_CUTOFF = 15;
 
 // array holding queue for each finger's sliding window position data points.
 ArrayList<Queue<PVector>> posFrames;
@@ -15,6 +16,10 @@ ArrayList<Queue<PVector>> velFrames;
 
 // array for each finger's change in velocity
 ArrayList<Double> accel;
+
+Queue<Integer> maxFingers = new LinkedList<Integer>(Arrays.asList(0,0,0));
+int maxFinger = 0;
+
 
 void setup() {
   size(800, 500);
@@ -83,13 +88,15 @@ void setup() {
 
 void draw() {
   background(255);
-
+  fill(0);
   //int fps = leap.getFrameRate();
 
   for (Hand hand : leap.getHands()) {
-    hand.draw();
+
     if (hand.isLeft()) {
       for (Finger finger : hand.getFingers()) {
+        finger.drawJoints(8);
+        finger.drawBones();
         PVector currPos = finger.getStabilizedPosition();
         PVector currVel = PVector.sub(currPos, posFrames.get(finger.getType()).remove());
         accel.set(finger.getType(), new Double(
@@ -100,6 +107,8 @@ void draw() {
       }
     } else if (hand.isRight()) {
       for (Finger finger : hand.getFingers()) {
+        finger.drawJoints(8);
+        finger.drawBones();
         PVector currPos = finger.getStabilizedPosition();
         PVector currVel = PVector.sub(currPos, posFrames.get(finger.getType()+5).remove());
         accel.set(finger.getType()+5, new Double(
@@ -107,34 +116,55 @@ void draw() {
           );
         posFrames.get(finger.getType()+5).add(currPos);
         velFrames.get(finger.getType()+5).add(currVel);
-        
       }
     }
   }
 
   Double maxAccel = Collections.max(accel);
-  int maxFinger = accel.indexOf(maxAccel);
-  //println(posFrames);
+  //int maxFinger = accel.indexOf(maxAccel);
   
-  println(maxAccel);
+  if (maxAccel > ACCEL_CUTOFF) {
+
+    if(accel.indexOf(maxAccel) == maxFingers.peek()){
+      maxFinger = maxFingers.remove();
+    } else {
+      maxFingers.remove();
+    }
+    maxFingers.add(accel.indexOf(maxAccel));
+  
+    println(maxFinger);
+  }
 
   for (Hand hand : leap.getHands ()) {
 
-    boolean handIsLeft         = hand.isLeft();
-    boolean handIsRight        = hand.isRight();
-
-    
-
+    boolean handIsLeft = hand.isLeft();
+    boolean handIsRight = hand.isRight();
 
     for (Finger finger : hand.getFingers()) {
-      int     fingerType         = finger.getType();
+      int     fingerType = finger.getType();
       PVector fingerStabilized = finger.getStabilizedPosition();
 
 
-      if (maxAccel > ACCEL_CUTOFF) {
         if ((maxFinger < 5 && handIsLeft && fingerType == maxFinger) || (maxFinger >= 5 && handIsRight && fingerType == maxFinger-5)) {
-          ellipse(fingerStabilized.x, fingerStabilized.y, 10, 10);
-        }
+          fill(66, 135, 245);
+          ellipse(fingerStabilized.x, fingerStabilized.y, 15, 15);
+          switch(maxFinger%5) {
+          case 0: 
+            text("Thumb", fingerStabilized.x, fingerStabilized.y-30);  
+            break;
+          case 1: 
+            text("Index", fingerStabilized.x, fingerStabilized.y-30);
+            break;
+          case 2:
+            text("Middle", fingerStabilized.x, fingerStabilized.y-30);
+            break;
+          case 3:
+            text("Ring", fingerStabilized.x, fingerStabilized.y-30);  
+            break;
+          case 4:
+            text("Pinky", fingerStabilized.x, fingerStabilized.y-30);
+          }
+        
       }
     }
   }
